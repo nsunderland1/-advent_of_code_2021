@@ -14,6 +14,7 @@ where
 }
 
 // Re-export common dependencies so we don't need to compile them for each day
+pub use criterion;
 pub use itertools;
 pub use nom;
 pub use regex;

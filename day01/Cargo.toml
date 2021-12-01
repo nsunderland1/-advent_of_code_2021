@@ -7,3 +7,7 @@ edition = "2021"
 
 [dependencies]
 aoc = { path = "../aoc" }
+
+[[bench]]
+name = "bench"
+harness = false
