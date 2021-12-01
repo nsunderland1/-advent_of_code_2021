@@ -1,22 +1,26 @@
-use std::{
-    fs::File,
-    io::{self, BufRead},
-    path::Path,
-};
+use aoc::*;
 
-fn read_lines<P>(filename: P) -> impl Iterator<Item = String>
-where
-    P: AsRef<Path>,
-{
-    let file = File::open(filename).unwrap();
-    io::BufReader::new(file).lines().map(Result::unwrap)
-}
+use itertools::Itertools;
+use std::path::{Path, PathBuf};
 
-fn input_path() -> PathBuf {
-    const crate_root: Path = Path::new(env!("CARGO_MANIFEST_DIR"));
+/// The path to the puzzle's input file.
+pub fn input_path() -> PathBuf {
+    let crate_root = Path::new(env!("CARGO_MANIFEST_DIR"));
     crate_root.join("input")
 }
 
+fn parse_line(s: String) -> u32 {
+    s.parse().unwrap()
+}
+
 fn main() {
-    let input: Vec<_> = read_lines(input_path()).collect();
+    let input: Vec<_> = read_lines(input_path()).map(parse_line).collect();
+
+    let result1 = {};
+
+    println!("Part 1: {}", result1);
+
+    let result2 = {};
+
+    println!("Part 2: {}", result2);
 }
