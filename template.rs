@@ -10,7 +10,7 @@ pub fn input_path() -> PathBuf {
     crate_root.join("input")
 }
 
-fn parse_line(s: String) -> u32 {
+fn parse_line(s: String) -> u64 {
     s.parse().unwrap()
 }
 
