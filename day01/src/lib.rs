@@ -12,12 +12,13 @@ pub fn input_path() -> PathBuf {
 type Input = u32;
 type Output = usize;
 
-fn parse_line(s: String) -> Input {
+fn parse_line(s: &str) -> Input {
     s.parse().unwrap()
 }
 
+const STATIC_INPUT: &str = include_str!("../input");
 pub fn parse_input() -> Vec<Input> {
-    read_lines(input_path()).map(parse_line).collect()
+    STATIC_INPUT.lines().map(parse_line).collect()
 }
 
 pub fn part1(input: Vec<Input>) -> Output {
