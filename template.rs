@@ -1,5 +1,6 @@
 use aoc::*;
 
+#[allow(unused)]
 use itertools::Itertools;
 use std::path::{Path, PathBuf};
 
@@ -14,13 +15,24 @@ fn parse_line(s: String) -> u32 {
 }
 
 fn main() {
+    #[allow(unused)]
     let input: Vec<_> = read_lines(input_path()).map(parse_line).collect();
 
-    let result1 = {};
+    // let input = parse_line(file_to_string(input_path()));
+
+    let result1 = {
+        // start
+        0
+        // end
+    };
 
     println!("Part 1: {}", result1);
 
-    let result2 = {};
+    let result2 = {
+        // start
+        0
+        // end
+    };
 
     println!("Part 2: {}", result2);
 }

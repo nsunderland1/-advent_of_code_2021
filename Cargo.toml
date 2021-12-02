@@ -2,5 +2,7 @@
 members = [
   'aoc',
   'update_workspace',
+  'template_manifest',
   'day01',
+  'day02',
 ]

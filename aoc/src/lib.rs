@@ -1,5 +1,5 @@
 use std::{
-    fs::File,
+    fs::{self, File},
     io::{self, BufRead},
     path::Path,
 };
@@ -11,6 +11,13 @@ where
 {
     let file = File::open(filename).unwrap();
     io::BufReader::new(file).lines().map(Result::unwrap)
+}
+
+pub fn file_to_string<P>(filename: P) -> String
+where
+    P: AsRef<Path>,
+{
+    fs::read_to_string(filename).unwrap()
 }
 
 // Re-export common dependencies so we don't need to compile them for each day
