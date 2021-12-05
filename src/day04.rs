@@ -1,14 +1,4 @@
-use aoc::*;
-
-#[allow(unused)]
 use itertools::Itertools;
-use std::path::{Path, PathBuf};
-
-/// The path to the puzzle's input file.
-pub fn input_path() -> PathBuf {
-    let crate_root = Path::new(env!("CARGO_MANIFEST_DIR"));
-    crate_root.join("input")
-}
 
 fn board_has_won(board: &Vec<Vec<Option<u64>>>) -> bool {
     board
@@ -17,10 +7,7 @@ fn board_has_won(board: &Vec<Vec<Option<u64>>>) -> bool {
         || (0..board[0].len()).any(|i| board.iter().find(|row| row[i].is_some()).is_none())
 }
 
-fn main() {
-    #[allow(unused)]
-    // let input: Vec<_> = read_lines(input_path()).map(parse_line).collect();
-    let input_str = file_to_string(input_path());
+pub fn run(input_str: &str) {
     let mut input = input_str.split("\n\n");
     let moves = input
         .next()

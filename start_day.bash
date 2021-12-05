@@ -5,14 +5,8 @@ DAY_PADDED=$(printf "%02d" $DAY)
 
 firefox https://adventofcode.com/2021/day/${DAY}
 
-cargo run -p update_workspace -- ./Cargo.toml day${DAY_PADDED}
-cargo new day${DAY_PADDED}
-cargo run -p template_manifest -- ./day${DAY_PADDED}/Cargo.toml
+curl "https://adventofcode.com/2021/day/${DAY}/input" -H "Cookie: session=${ADVENT_SESSION}" > "input/${DAY}.input"
 
-cp template.rs day${DAY_PADDED}/src/main.rs
+code -n . src/day${DAY_PADDED}.rs input/${DAY}.input
 
-curl "https://adventofcode.com/2021/day/${DAY}/input" -H "Cookie: session=${ADVENT_SESSION}" > "day${DAY_PADDED}/input"
-
-code -n . day${DAY_PADDED}/src/main.rs day${DAY_PADDED}/input
-
-cd day${DAY_PADDED} && cargo build && cargo build --release
+cargo build && cargo build --release

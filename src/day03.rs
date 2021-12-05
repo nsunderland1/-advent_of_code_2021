@@ -1,19 +1,7 @@
-use aoc::*;
-
-#[allow(unused)]
 use itertools::Itertools;
-use std::{
-    cmp,
-    path::{Path, PathBuf},
-};
+use std::cmp;
 
-/// The path to the puzzle's input file.
-pub fn input_path() -> PathBuf {
-    let crate_root = Path::new(env!("CARGO_MANIFEST_DIR"));
-    crate_root.join("input")
-}
-
-fn parse_line(s: String) -> Vec<u8> {
+fn parse_line(s: &str) -> Vec<u8> {
     s.as_bytes().into_iter().map(|b| b - b'0').collect()
 }
 
@@ -21,9 +9,8 @@ fn bin_to_int(binary: &Vec<u8>) -> u128 {
     binary.iter().fold(0, |acc, &bit| (acc << 1) + bit as u128)
 }
 
-fn main() {
-    #[allow(unused)]
-    let input: Vec<_> = read_lines(input_path()).map(parse_line).collect();
+pub fn run(input: &str) {
+    let input: Vec<_> = input.lines().map(parse_line).collect();
 
     let (maxes, mins): (Vec<_>, Vec<_>) = (0..input[0].len())
         .map(|i| {

@@ -1,10 +1,15 @@
-[workspace]
-members = [
-  'aoc',
-  'update_workspace',
-  'template_manifest',
-  'day01',
-  'day02',
-  'day03',
-  'day04',
-]
+[package]
+name = "advent_of_code_2021"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+structopt = "0.3.25"
+itertools = "0.10.1"
+nom = "7.1.0"
+regex = "1.5.4"
+serde = "1.0.130"
+serde_json = "1.0.72"
+chrono = "0.4.19"
