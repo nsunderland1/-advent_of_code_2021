@@ -10,6 +10,7 @@ mod day01;
 mod day02;
 mod day03;
 mod day04;
+mod day05;
 
 #[derive(StructOpt)]
 enum Options {
@@ -46,8 +47,8 @@ impl Options {
     }
 }
 
-// Just use a hardcoded table for now
-const DAY_TABLE: [fn(&str); 4] = [day01::run, day02::run, day03::run, day04::run];
+// Just use a hardcoded table for now. TODO: write a macro that simplifies this
+const DAY_TABLE: &[fn(&str)] = &[day01::run, day02::run, day03::run, day04::run, day05::run];
 
 pub fn input_file(day: u32) -> PathBuf {
     let crate_root = Path::new(env!("CARGO_MANIFEST_DIR"));
