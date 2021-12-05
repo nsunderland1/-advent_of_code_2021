@@ -12,33 +12,56 @@ fn bin_to_int(binary: &Vec<u8>) -> u128 {
 pub fn run(input: &str) {
     let input: Vec<_> = input.lines().map(parse_line).collect();
 
-    let (maxes, mins): (Vec<_>, Vec<_>) = (0..input[0].len())
-        .map(|i| {
-            let counts = input.iter().map(|s| s[i]).counts();
-            let max = cmp::max_by_key(0, 1, |i| counts[i]);
-            (max, 1 - max)
-        })
-        .unzip();
+    let result1 = {
+        let (maxes, mins): (Vec<_>, Vec<_>) = (0..input[0].len())
+            .map(|i| {
+                let counts = input.iter().map(|s| s[i]).counts();
+                let max = cmp::max_by_key(0, 1, |i| counts[i]);
+                (max, 1 - max)
+            })
+            .unzip();
 
-    let result1 = bin_to_int(&maxes) * bin_to_int(&mins);
+        bin_to_int(&maxes) * bin_to_int(&mins)
+    };
 
     println!("Part 1: {}", result1);
 
     let result2 = {
-        let longest_match = |other: Vec<u8>| {
-            input
-                .iter()
-                .max_by_key(|binary| {
-                    binary
-                        .iter()
-                        .zip(other.iter())
-                        .take_while(|(l, r)| *l == *r)
-                        .count()
-                })
-                .unwrap()
+        let oxygen = {
+            let mut remaining = input.clone();
+            for i in 0..input[0].len() {
+                match remaining.as_slice() {
+                    [] => unreachable!(),
+                    [_] => break,
+                    _ => {
+                        let counts = remaining.iter().map(|s| s[i]).counts();
+                        let max = cmp::max_by_key(0, 1, |i| counts[i]);
+                        remaining.retain(|num| num[i] == max);
+                    }
+                }
+            }
+            assert_eq!(remaining.len(), 1);
+            bin_to_int(&remaining[0])
         };
 
-        bin_to_int(&longest_match(maxes)) * bin_to_int(&longest_match(mins))
+        let co2 = {
+            let mut remaining = input.clone();
+            for i in 0..input[0].len() {
+                match remaining.as_slice() {
+                    [] => unreachable!(),
+                    [_] => break,
+                    _ => {
+                        let counts = remaining.iter().map(|s| s[i]).counts();
+                        let min = cmp::min_by_key(0, 1, |i| counts[i]);
+                        remaining.retain(|num| num[i] == min);
+                    }
+                }
+            }
+            assert_eq!(remaining.len(), 1);
+            bin_to_int(&remaining[0])
+        };
+
+        oxygen * co2
     };
 
     println!("Part 2: {}", result2);
