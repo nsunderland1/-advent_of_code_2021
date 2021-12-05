@@ -1,16 +1,8 @@
-use std::{
-    fs,
-    path::{Path, PathBuf},
-};
+use std::fs;
 
+use advent_of_code_2021::{get_input_file, run_day};
 use chrono::{Datelike, FixedOffset, Utc};
 use structopt::StructOpt;
-
-mod day01;
-mod day02;
-mod day03;
-mod day04;
-mod day05;
 
 #[derive(StructOpt)]
 enum Options {
@@ -47,21 +39,13 @@ impl Options {
     }
 }
 
-// Just use a hardcoded table for now. TODO: write a macro that simplifies this
-const DAY_TABLE: &[fn(&str)] = &[day01::run, day02::run, day03::run, day04::run, day05::run];
-
-pub fn input_file(day: u32) -> PathBuf {
-    let crate_root = Path::new(env!("CARGO_MANIFEST_DIR"));
-    crate_root.join("input").join(format!("{}.input", day))
-}
-
 fn main() {
     let options = Options::from_args();
     let days = options.days();
 
     for day in days {
-        let input = fs::read_to_string(input_file(day)).expect("Failed to read input file");
+        let input = fs::read_to_string(get_input_file(day)).expect("Failed to read input file");
         println!("Day {}", day);
-        DAY_TABLE[day as usize - 1](&input);
+        run_day(day, &input);
     }
 }
