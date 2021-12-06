@@ -1,4 +1,4 @@
-use std::fs;
+use std::{fs, time::Instant};
 
 use advent_of_code_2021::{get_input_file, run_day};
 use chrono::{Datelike, FixedOffset, Utc};
@@ -46,6 +46,9 @@ fn main() {
     for day in days {
         let input = fs::read_to_string(get_input_file(day)).expect("Failed to read input file");
         println!("Day {}", day);
+        let time = Instant::now();
         run_day(day, &input);
+        let runtime = time.elapsed();
+        println!("Ran in {:?}", runtime);
     }
 }
