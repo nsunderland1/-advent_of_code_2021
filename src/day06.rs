@@ -10,6 +10,17 @@ fn expand_fish(mut fish_by_days_left: [u64; 9], duration: usize) -> u64 {
     fish_by_days_left.into_iter().sum()
 }
 
+// My original solution. Slightly slower, but I think it's a lot easier to read
+#[allow(unused)]
+fn expand_fish_pretty(mut fish_by_days_left: [u64; 9], duration: usize) -> u64 {
+    for _ in 0..duration {
+        fish_by_days_left.rotate_left(1);
+        fish_by_days_left[6] += fish_by_days_left[8];
+    }
+
+    fish_by_days_left.into_iter().sum()
+}
+
 pub fn run(input: &str) {
     let input: Vec<usize> = input
         .split(",")
