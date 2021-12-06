@@ -22,11 +22,10 @@ fn expand_fish_pretty(mut fish_by_days_left: [u64; 9], duration: usize) -> u64 {
 }
 
 pub fn run(input: &str) {
-    let input: Vec<usize> = input
+    let input = input
         .split(",")
-        .map(str::parse)
-        .map(Result::unwrap)
-        .collect();
+        .map(str::parse::<usize>)
+        .map(Result::unwrap);
 
     let mut fish_by_days_left: [u64; 9] = [0; 9];
     for fish in input {
