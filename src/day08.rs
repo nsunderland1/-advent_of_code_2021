@@ -1,10 +1,13 @@
-use std::collections::HashSet;
-
 use itertools::Itertools;
 
-fn parse_line(s: &str) -> (Vec<String>, Vec<String>) {
+fn parse_line(s: &str) -> (Vec<u8>, Vec<u8>) {
     s.split(" | ")
-        .map(|side| side.split(" ").map(String::from).collect())
+        .map(|side| {
+            side.split(" ")
+                // map a to 0b1, b to 0b10, c to 0b100...
+                .map(|s| s.chars().map(|c| 1 << (c as u8 - b'a')).sum())
+                .collect()
+        })
         .collect_tuple()
         .unwrap()
 }
@@ -16,7 +19,7 @@ pub fn run(input: &str) {
         input
             .iter()
             .flat_map(|(_, outputs)| outputs.iter())
-            .filter(|s| [2, 4, 3, 7].contains(&s.len()))
+            .filter(|n| [2, 4, 3, 7].contains(&n.count_ones()))
             .count()
     };
 
@@ -26,17 +29,19 @@ pub fn run(input: &str) {
         input
             .iter()
             .map(|(signals, outputs)| {
-                let numbers: Vec<HashSet<char>> = signals
+                let numbers: Vec<u8> = signals
                     .iter()
                     .chain(outputs.iter())
-                    .map(|word| word.chars().sorted().collect::<String>())
                     .sorted()
                     .dedup()
-                    .map(|word| word.chars().collect())
+                    .copied()
                     .collect();
 
-                let find_by_size = |size| -> &HashSet<_> {
-                    numbers.iter().find(|number| number.len() == size).unwrap()
+                let find_by_size = |size| -> u8 {
+                    *numbers
+                        .iter()
+                        .find(|number| number.count_ones() == size)
+                        .unwrap()
                 };
 
                 let one = find_by_size(2);
@@ -47,90 +52,75 @@ pub fn run(input: &str) {
                 // 0, 6, 9
                 let six_segments: Vec<_> = numbers
                     .iter()
-                    .filter(|number| number.len() == 6)
+                    .filter(|number| number.count_ones() == 6)
                     .cloned()
                     .collect();
 
                 // 2, 3, 5
                 let five_segments: Vec<_> = numbers
                     .iter()
-                    .filter(|number| number.len() == 5)
-                    .cloned()
+                    .copied()
+                    .filter(|number| number.count_ones() == 5)
                     .collect();
-
-                // top segment is the only one not shared by 1, 7
-                let a = seven.difference(&one).next().unwrap();
 
                 // bottom right segment is the only one shared by 0, 1, 6, 9
                 let f = six_segments
                     .iter()
-                    .fold(one.clone(), |acc, number| {
-                        acc.intersection(&number).cloned().collect()
-                    })
-                    .into_iter()
-                    .next()
-                    .unwrap();
+                    .copied()
+                    .fold(one, |acc, number| acc & number);
 
                 // top right segment is 1's other segment
-                let c = one.iter().find(|&&segment| segment != f).unwrap();
+                let c = one & !f;
 
-                let six: HashSet<_> = eight.difference(&HashSet::from([*c])).cloned().collect();
+                // six is eight minus the top right segment
+                let six = eight & !c;
                 assert!(six_segments.contains(&six));
 
-                let three: HashSet<_> = five_segments
+                // three is the only 5-segment number containing the two right segments
+                let three = five_segments
                     .iter()
-                    .cloned()
-                    .find(|number| number.contains(&c) && number.contains(&f))
+                    .copied()
+                    .find(|&number| number & (c | f) == c | f)
                     .unwrap();
 
-                let two: HashSet<_> = five_segments
+                // two is the only other 5-segment number containing the top right segment
+                let two = five_segments
                     .iter()
-                    .cloned()
-                    .filter(|number| *number != three)
-                    .find(|number| number.contains(&c))
+                    .copied()
+                    .filter(|&number| number != three)
+                    .find(|&number| number & c == c)
                     .unwrap();
 
-                let five: HashSet<_> = five_segments
+                // five is the only remaining 5-segment number
+                let five = five_segments
                     .iter()
-                    .cloned()
-                    .filter(|number| *number != three && *number != two)
-                    .next()
+                    .copied()
+                    .find(|&number| number != three && number != two)
                     .unwrap();
 
-                let nine: HashSet<_> = six_segments
+                // nine intersects with five along 5 segments, whereas zero only intersects with 5 on 4 segments
+                let nine = six_segments
                     .iter()
-                    .cloned()
-                    .filter(|number| *number != six)
-                    .find(|number| number.intersection(&five).count() == 5)
+                    .copied()
+                    .filter(|&number| number != six)
+                    .find(|&number| (number & five).count_ones() == 5)
                     .unwrap();
 
-                let zero: HashSet<_> = six_segments
+                // zero is the only remaining 6-segment number
+                let zero = six_segments
                     .iter()
-                    .cloned()
-                    .filter(|number| *number != six && *number != nine)
-                    .next()
+                    .copied()
+                    .find(|&number| number != six && number != nine)
                     .unwrap();
 
-                let listing = [
-                    zero,
-                    one.clone(),
-                    two,
-                    three,
-                    four.clone(),
-                    five,
-                    six,
-                    seven.clone(),
-                    eight.clone(),
-                    nine,
-                ];
+                let listing = [zero, one, two, three, four, five, six, seven, eight, nine];
                 outputs
                     .iter()
-                    .map(|word| word.chars().collect::<HashSet<_>>())
-                    .map(|number| {
+                    .map(|&number| {
                         listing
                             .iter()
                             .enumerate()
-                            .find(|(_, list_item)| **list_item == number)
+                            .find(|(_, &list_item)| list_item == number)
                             .unwrap()
                             .0
                     })
