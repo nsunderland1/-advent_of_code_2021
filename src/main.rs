@@ -1,4 +1,7 @@
-use std::{fs, time::Instant};
+use std::{
+    fs,
+    time::{Duration, Instant},
+};
 
 use advent_of_code_2021::{get_input_file, run_day};
 use chrono::{Datelike, FixedOffset, Utc};
@@ -43,6 +46,7 @@ fn main() {
     let options = Options::from_args();
     let days = options.days();
 
+    let mut total = Duration::ZERO;
     for day in days {
         let input = fs::read_to_string(get_input_file(day)).expect("Failed to read input file");
         let input = input.trim();
@@ -51,5 +55,7 @@ fn main() {
         run_day(day, &input);
         let runtime = time.elapsed();
         println!("Ran in {:?}", runtime);
+        total += runtime;
     }
+    println!("Total time: {:?}", total);
 }
