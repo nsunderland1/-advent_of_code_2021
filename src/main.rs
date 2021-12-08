@@ -45,6 +45,7 @@ fn main() {
 
     for day in days {
         let input = fs::read_to_string(get_input_file(day)).expect("Failed to read input file");
+        let input = input.trim();
         println!("Day {}", day);
         let time = Instant::now();
         run_day(day, &input);
