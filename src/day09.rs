@@ -1,6 +1,3 @@
-use std::{cmp::Reverse, iter::Rev};
-
-#[allow(unused)]
 use itertools::Itertools;
 
 fn parse_line(s: &str) -> Vec<u32> {
@@ -9,37 +6,25 @@ fn parse_line(s: &str) -> Vec<u32> {
         .collect()
 }
 
-fn is_low_point(map: &Vec<Vec<u32>>, x: usize, y: usize) -> bool {
-    for yi in y.saturating_sub(1)..=y.saturating_add(1).min(map.len() - 1) {
-        if yi == y {
-            continue;
-        }
-        if map[yi][x] <= map[y][x] {
-            return false;
-        }
-    }
-
-    for xi in x.saturating_sub(1)..=x.saturating_add(1).min(map[0].len() - 1) {
-        if xi == x {
-            continue;
-        }
-        if map[y][xi] <= map[y][x] {
-            return false;
-        }
-    }
-
-    true
+fn is_low_point(map: &Vec<Vec<u32>>, &(x, y): &(usize, usize)) -> bool {
+    neighbours(map, x, y).all(|(xi, yi)| map[yi][xi] > map[y][x])
 }
 
-fn neighbours(map: &Vec<Vec<u32>>, x: usize, y: usize) -> impl Iterator<Item = (usize, usize)> {
-    Iterator::chain(
-        (x.saturating_sub(1)..=x.saturating_add(1).min(map[0].len() - 1))
-            .filter(move |&xi| xi != x)
-            .map(move |xi| (xi, y)),
-        (y.saturating_sub(1)..=y.saturating_add(1).min(map.len() - 1))
-            .filter(move |&yi| yi != y)
-            .map(move |yi| (x, yi)),
-    )
+// I don't know why Rust needs an anonymous lifetime on the `impl Iterator` here...
+fn neighbours(
+    map: &Vec<Vec<u32>>,
+    x: usize,
+    y: usize,
+) -> impl Iterator<Item = (usize, usize)> + '_ {
+    [
+        (x.saturating_sub(1), y),
+        (x.saturating_add(1), y),
+        (x, y.saturating_sub(1)),
+        (x, y.saturating_add(1)),
+    ]
+    .into_iter()
+    .filter(move |&(xi, yi)| xi != x || yi != y)
+    .filter(|&(xi, yi)| yi < map.len() && xi < map[yi].len())
 }
 
 fn compute_basin_size(
@@ -59,52 +44,33 @@ fn compute_basin_size(
 }
 
 pub fn run(input: &str) {
-    #[allow(unused)]
     let input: Vec<_> = input.lines().map(parse_line).collect();
 
+    let low_points = input
+        .iter()
+        .enumerate()
+        .flat_map(|(y, line)| line.iter().enumerate().map(move |(x, _)| (x, y)))
+        .filter(|point| is_low_point(&input, point))
+        .collect_vec();
+
     let result1 = {
-        input
+        low_points
             .iter()
-            .enumerate()
-            .map(|(y, line)| {
-                line.iter()
-                    .enumerate()
-                    .filter_map(|(x, val)| {
-                        if is_low_point(&input, x, y) {
-                            Some(1 + val)
-                        } else {
-                            None
-                        }
-                    })
-                    .sum::<u32>()
-            })
+            .map(|&(x, y)| input[y][x] + 1)
             .sum::<u32>()
     };
 
     println!("Part 1: {}", result1);
 
     let result2 = {
-        let low_points = input.iter().cloned().enumerate().flat_map(|(y, line)| {
-            line.iter()
-                .enumerate()
-                .filter_map(|(x, _)| {
-                    if is_low_point(&input, x, y) {
-                        Some((x, y))
-                    } else {
-                        None
-                    }
-                })
-                .collect_vec()
-                .into_iter()
-        });
         let mut visited = vec![vec![false; input[0].len()]; input.len()];
 
         let mut basin_sizes = low_points
+            .into_iter()
             .map(|low_point| compute_basin_size(low_point, &input, &mut visited))
             .collect_vec();
 
         basin_sizes.sort();
-
         basin_sizes.into_iter().rev().take(3).product::<usize>()
     };
 
