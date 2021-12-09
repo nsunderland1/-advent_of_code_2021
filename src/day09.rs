@@ -1,22 +1,22 @@
 use itertools::Itertools;
 
+use crate::grid::Grid;
+
 fn parse_line(s: &str) -> Vec<u32> {
     s.chars()
         .map(|c| String::from(c).parse::<u32>().unwrap())
         .collect()
 }
 
-fn is_low_point(map: &Vec<Vec<u32>>, &(x, y): &(usize, usize)) -> bool {
-    neighbours(map, x, y).all(|(xi, yi)| map[yi][xi] > map[y][x])
+fn is_low_point(map: &Grid<u32>, point: &(usize, usize)) -> bool {
+    neighbours(map, point).all(|neighbour| map[neighbour] > map[*point])
 }
 
-// I don't know why Rust needs an anonymous lifetime on the `impl Iterator` here...
-fn neighbours(
-    map: &Vec<Vec<u32>>,
-    x: usize,
-    y: usize,
-) -> impl Iterator<Item = (usize, usize)> + '_ {
-    [
+fn neighbours<'a>(
+    map: &'a Grid<u32>,
+    &(x, y): &(usize, usize),
+) -> impl Iterator<Item = (usize, usize)> + 'a {
+    vec![
         (x.saturating_sub(1), y),
         (x.saturating_add(1), y),
         (x, y.saturating_sub(1)),
@@ -24,18 +24,15 @@ fn neighbours(
     ]
     .into_iter()
     .filter(move |&(xi, yi)| xi != x || yi != y)
-    .filter(|&(xi, yi)| yi < map.len() && xi < map[yi].len())
+    .filter(|&(xi, yi)| xi < map.width() && yi < map.height())
 }
 
-fn compute_basin_size(
-    (x, y): (usize, usize),
-    map: &Vec<Vec<u32>>,
-    visited: &mut Vec<Vec<bool>>,
-) -> usize {
-    visited[y][x] = true;
+fn compute_basin_size(point: (usize, usize), map: &Grid<u32>, visited: &mut Grid<bool>) -> usize {
+    visited[point] = true;
+
     let mut total = 1;
-    for neighbour @ (i, j) in neighbours(map, x, y) {
-        if visited[j][i] || map[j][i] == 9 {
+    for neighbour in neighbours(map, &point) {
+        if visited[neighbour] || map[neighbour] == 9 {
             continue;
         }
         total += compute_basin_size(neighbour, map, visited);
@@ -44,26 +41,23 @@ fn compute_basin_size(
 }
 
 pub fn run(input: &str) {
-    let input: Vec<_> = input.lines().map(parse_line).collect();
+    let input: Grid<_> = input.lines().map(parse_line).collect();
 
-    let low_points = input
-        .iter()
-        .enumerate()
-        .flat_map(|(y, line)| line.iter().enumerate().map(move |(x, _)| (x, y)))
+    let low_points = Itertools::cartesian_product(0..input.width(), 0..input.height())
         .filter(|point| is_low_point(&input, point))
         .collect_vec();
 
     let result1 = {
         low_points
             .iter()
-            .map(|&(x, y)| input[y][x] + 1)
+            .map(|&point| input[point] + 1)
             .sum::<u32>()
     };
 
     println!("Part 1: {}", result1);
 
     let result2 = {
-        let mut visited = vec![vec![false; input[0].len()]; input.len()];
+        let mut visited = Grid::new(input.width(), input.height());
 
         let mut basin_sizes = low_points
             .into_iter()
