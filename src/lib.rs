@@ -8,6 +8,7 @@ mod day05;
 mod day06;
 mod day07;
 mod day08;
+mod day09;
 
 const DAY_TABLE: &[fn(&str)] = &[
     day01::run,
@@ -18,6 +19,7 @@ const DAY_TABLE: &[fn(&str)] = &[
     day06::run,
     day07::run,
     day08::run,
+    day09::run,
 ];
 
 /// Get the path to the input file for a given day
