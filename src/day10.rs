@@ -1,9 +1,5 @@
 use itertools::Itertools;
 
-fn parse_line(s: &str) -> Vec<char> {
-    s.chars().collect()
-}
-
 fn error_score(c: char) -> u64 {
     match c {
         ')' => 3,
@@ -24,29 +20,26 @@ fn incomplete_score(c: char) -> u64 {
     }
 }
 
-fn check_syntax(delimiters: Vec<char>) -> Result<Vec<char>, char> {
-    let mut stack = Vec::with_capacity(delimiters.len());
-    let mut remaining = &delimiters[..];
-    while let [first, rest @ ..] = remaining {
-        match (stack.last(), *first) {
+fn check_syntax(delimiters: impl Iterator<Item = char>) -> Result<Vec<char>, char> {
+    let mut stack = Vec::with_capacity(delimiters.size_hint().1.unwrap_or(200));
+    for c in delimiters {
+        match (stack.last(), c) {
             (Some('('), ')') | (Some('['), ']') | (Some('{'), '}') | (Some('<'), '>') => {
                 stack.pop();
             }
-            (_, c @ ('(' | '[' | '{' | '<')) => {
+            (_, '(' | '[' | '{' | '<') => {
                 stack.push(c);
             }
-            (_, c) => return Err(c),
+            (_, _) => return Err(c),
         }
-        remaining = rest;
     }
     Ok(stack)
 }
 
 pub fn run(input: &str) {
-    let input: Vec<_> = input.lines().map(parse_line).collect();
-
     let (mut incomplete_scores, errors): (Vec<_>, Vec<_>) = input
-        .into_iter()
+        .lines()
+        .map(|s| s.chars())
         .map(check_syntax)
         .map_ok(|remaining| {
             remaining
