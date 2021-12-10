@@ -32,6 +32,10 @@ impl<T> Grid<T> {
     pub fn height(&self) -> usize {
         self.height
     }
+
+    pub fn into_flat_iter(self) -> impl Iterator<Item = T> {
+        self.grid.into_iter()
+    }
 }
 
 impl<T> Index<(usize, usize)> for Grid<T> {
