@@ -4,10 +4,6 @@ fn parse_line(s: &str) -> Vec<char> {
     s.chars().collect()
 }
 
-fn closes(open: char, close: char) -> bool {
-    close == closer_for(open)
-}
-
 fn closer_for(c: char) -> char {
     match c {
         '(' => ')',
@@ -16,10 +12,6 @@ fn closer_for(c: char) -> char {
         '<' => '>',
         _ => unreachable!("These are the only options"),
     }
-}
-
-fn is_opener(c: char) -> bool {
-    matches!(c, '(' | '[' | '{' | '<')
 }
 
 fn error_score(c: char) -> u64 {
@@ -46,14 +38,14 @@ fn check_syntax(instructions: Vec<char>) -> Result<Vec<char>, char> {
     let mut stack = Vec::with_capacity(instructions.len());
     let mut remaining = &instructions[..];
     while let [first, rest @ ..] = remaining {
-        match stack.last() {
-            Some(&opener) if closes(opener, *first) => {
+        match (stack.last(), *first) {
+            (Some(&opener), c) if c == closer_for(opener) => {
                 stack.pop();
             }
-            _ if is_opener(*first) => {
-                stack.push(*first);
+            (_, c @ ('(' | '[' | '{' | '<')) => {
+                stack.push(c);
             }
-            _ => return Err(*first),
+            (_, c) => return Err(c),
         }
         remaining = rest;
     }
