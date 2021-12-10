@@ -4,16 +4,6 @@ fn parse_line(s: &str) -> Vec<char> {
     s.chars().collect()
 }
 
-fn closer_for(c: char) -> char {
-    match c {
-        '(' => ')',
-        '[' => ']',
-        '{' => '}',
-        '<' => '>',
-        _ => unreachable!("These are the only options"),
-    }
-}
-
 fn error_score(c: char) -> u64 {
     match c {
         ')' => 3,
@@ -26,20 +16,20 @@ fn error_score(c: char) -> u64 {
 
 fn incomplete_score(c: char) -> u64 {
     match c {
-        ')' => 1,
-        ']' => 2,
-        '}' => 3,
-        '>' => 4,
+        '(' => 1,
+        '[' => 2,
+        '{' => 3,
+        '<' => 4,
         _ => unreachable!("These are the only options"),
     }
 }
 
-fn check_syntax(instructions: Vec<char>) -> Result<Vec<char>, char> {
-    let mut stack = Vec::with_capacity(instructions.len());
-    let mut remaining = &instructions[..];
+fn check_syntax(delimiters: Vec<char>) -> Result<Vec<char>, char> {
+    let mut stack = Vec::with_capacity(delimiters.len());
+    let mut remaining = &delimiters[..];
     while let [first, rest @ ..] = remaining {
         match (stack.last(), *first) {
-            (Some(&opener), c) if c == closer_for(opener) => {
+            (Some('('), ')') | (Some('['), ']') | (Some('{'), '}') | (Some('<'), '>') => {
                 stack.pop();
             }
             (_, c @ ('(' | '[' | '{' | '<')) => {
@@ -62,7 +52,7 @@ pub fn run(input: &str) {
             remaining
                 .into_iter()
                 .rev()
-                .fold(0, |acc, c| 5 * acc + incomplete_score(closer_for(c)))
+                .fold(0, |acc, c| 5 * acc + incomplete_score(c))
         })
         .partition_result();
 
