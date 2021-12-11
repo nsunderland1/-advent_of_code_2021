@@ -1,7 +1,11 @@
-use std::ops::{Index, IndexMut};
+use std::{
+    ops::{Index, IndexMut},
+    slice,
+};
 
 use itertools::Itertools;
 
+#[derive(Clone)]
 pub struct Grid<T> {
     width: usize,
     height: usize,
@@ -35,6 +39,10 @@ impl<T> Grid<T> {
 
     pub fn into_flat_iter(self) -> impl Iterator<Item = T> {
         self.grid.into_iter()
+    }
+
+    pub fn flat_iter_mut(&mut self) -> slice::IterMut<'_, T> {
+        self.grid.iter_mut()
     }
 }
 
