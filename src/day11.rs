@@ -2,21 +2,6 @@ use itertools::Itertools;
 
 use crate::grid::Grid;
 
-fn neighbours<'a>(
-    map: &'a Grid<u32>,
-    &(x, y): &(usize, usize),
-) -> impl Iterator<Item = (usize, usize)> + 'a {
-    // In flipped order for more efficient traversal I guess
-    Itertools::cartesian_product(
-        y.saturating_sub(1)..=y.saturating_add(1).min(map.height() - 1),
-        x.saturating_sub(1)..=x.saturating_add(1).min(map.width() - 1),
-    )
-    .map(|(y, x)| (x, y))
-    .filter(move |&(xi, yi)| xi != x || yi != y)
-    .sorted()
-    .dedup()
-}
-
 pub fn step(grid: &mut Grid<u32>) -> usize {
     let mut flashed_count = 0;
     let mut queue = Itertools::cartesian_product(0..grid.height(), 0..grid.width())
@@ -27,7 +12,7 @@ pub fn step(grid: &mut Grid<u32>) -> usize {
         grid[cell] += 1;
         if grid[cell] == 10 {
             flashed_count += 1;
-            for neighbour in neighbours(&grid, &cell) {
+            for neighbour in grid.neighbours(cell) {
                 queue.push(neighbour);
             }
         }

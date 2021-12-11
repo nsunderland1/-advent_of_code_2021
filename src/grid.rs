@@ -37,6 +37,18 @@ impl<T> Grid<T> {
         self.height
     }
 
+    pub fn neighbours(&self, (x, y): (usize, usize)) -> impl Iterator<Item = (usize, usize)> {
+        // In flipped order for more efficient traversal I guess
+        Itertools::cartesian_product(
+            y.saturating_sub(1)..=y.saturating_add(1).min(self.height() - 1),
+            x.saturating_sub(1)..=x.saturating_add(1).min(self.width() - 1),
+        )
+        .map(|(y, x)| (x, y))
+        .filter(move |&(xi, yi)| xi != x || yi != y)
+        .sorted()
+        .dedup()
+    }
+
     pub fn into_flat_iter(self) -> impl Iterator<Item = T> {
         self.grid.into_iter()
     }
