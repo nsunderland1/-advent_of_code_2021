@@ -67,7 +67,7 @@ fn find_paths(
 
 fn find_paths_2(
     graph: &HashMap<Cave, Vec<Cave>>,
-    visited: HashSet<Cave>,
+    visited: &mut HashMap<Cave, usize>,
     current: &Cave,
     goal: &Cave,
     mut doubled: bool,
@@ -77,22 +77,28 @@ fn find_paths_2(
         name: String::from("start"),
     };
 
+    let entry = visited.entry(current.clone()).or_default();
+
     if *current == *goal {
         1
-    } else if (doubled || *current == *goal || *current == start) && visited.contains(current) {
+    } else if (doubled || *current == start) && *entry > 0 {
         0
     } else if let Some(next_caves) = graph.get(current) {
-        let mut next_visited = visited.clone();
-        if visited.contains(current) {
+        if *entry == 1 {
             assert!(!doubled);
             doubled = true;
+            *entry += 1
         } else if current.kind == Kind::Small {
-            next_visited.insert(current.clone());
+            *entry += 1;
         }
-        next_caves
+        let count = next_caves
             .iter()
-            .map(|cave| find_paths_2(graph, next_visited.clone(), &cave, goal, doubled))
-            .sum()
+            .map(|cave| find_paths_2(graph, visited, &cave, goal, doubled))
+            .sum();
+        let entry = visited.entry(current.clone()).or_default();
+        *entry = entry.saturating_sub(1);
+
+        count
     } else {
         0
     }
@@ -130,8 +136,8 @@ pub fn run(input: &str) {
     println!("Part 1: {}", result1);
 
     let result2 = {
-        let mut visited = HashSet::new();
-        find_paths_2(&graph, visited, &start, &end, false)
+        let mut visited = HashMap::new();
+        find_paths_2(&graph, &mut visited, &start, &end, false)
     };
 
     println!("Part 2: {}", result2);
