@@ -46,9 +46,9 @@ impl Fold {
     fn apply(&self, points: HashSet<(usize, usize)>) -> HashSet<(usize, usize)> {
         points
             .into_iter()
-            .map(|(x, y)| match self {
-                &Fold::X(offset) if x > offset => (offset - (x - offset), y),
-                &Fold::Y(offset) if y > offset => (x, offset - (y - offset)),
+            .map(|(x, y)| match *self {
+                Fold::X(offset) if x > offset => (offset - (x - offset), y),
+                Fold::Y(offset) if y > offset => (x, offset - (y - offset)),
                 _ => (x, y),
             })
             .collect()
@@ -56,7 +56,6 @@ impl Fold {
 }
 
 pub fn run(input: &str) {
-    // let input: Vec<_> = input.lines().map(parse_line).collect();
     let (points, folds) = input.split_once("\n\n").unwrap();
     let points: HashSet<_> = points.lines().map(parse_point).collect();
     let mut folds = folds.lines().map(str::parse::<Fold>).map(Result::unwrap);

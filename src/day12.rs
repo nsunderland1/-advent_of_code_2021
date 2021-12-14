@@ -4,8 +4,6 @@ use std::{
     str::FromStr,
 };
 
-use itertools::Itertools;
-
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 enum Kind {
     Big,
