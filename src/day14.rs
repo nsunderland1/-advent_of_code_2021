@@ -1,17 +1,24 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use itertools::Itertools;
 
-fn step(s: &str, rules: &HashMap<(char, char), char>) -> String {
-    let seps = s.chars().tuple_windows().map(|pair| rules[&pair]);
-    s.chars().interleave(seps).collect()
-}
-
-fn counts_after_n(s: &str, rules: &HashMap<(char, char), char>, n: usize) -> HashMap<char, usize> {
-    (0..n)
-        .fold(s.to_string(), |acc, _| step(&acc, &rules))
-        .chars()
-        .counts()
+fn step_by(
+    n: usize,
+    rules: &HashMap<(char, char), char>,
+    mut char_counts: HashMap<char, usize>,
+    mut pair_counts: HashMap<(char, char), usize>,
+) -> (HashMap<char, usize>, HashMap<(char, char), usize>) {
+    for _ in 0..n {
+        let mut new_pair_counts = HashMap::with_capacity(pair_counts.len());
+        for (pair, count) in pair_counts.into_iter() {
+            let inner = rules[&pair];
+            *new_pair_counts.entry((pair.0, inner)).or_insert(0) += count;
+            *new_pair_counts.entry((inner, pair.1)).or_insert(0) += count;
+            *char_counts.entry(inner).or_insert(0) += count;
+        }
+        pair_counts = new_pair_counts;
+    }
+    (char_counts, pair_counts)
 }
 
 pub fn run(input: &str) {
@@ -26,43 +33,20 @@ pub fn run(input: &str) {
         })
         .collect();
 
+    let char_counts = start.chars().counts();
+    let pair_counts: HashMap<(char, char), _> = start.chars().tuple_windows().counts();
+
+    let (char_counts, pair_counts) = step_by(10, &rules, char_counts, pair_counts);
     let result1 = {
-        let res = (0..10).fold(start.to_string(), |acc, _| step(&acc, &rules));
-        let counts = res.chars().counts();
-        let (min, max) = counts.values().minmax().into_option().unwrap();
+        let (min, max) = char_counts.values().minmax().into_option().unwrap();
         max - min
     };
-
     println!("Part 1: {}", result1);
 
+    let (char_counts, _) = step_by(30, &rules, char_counts, pair_counts);
     let result2 = {
-        let letters: HashSet<_> = rules.values().copied().collect();
-
-        let counts_after_20: HashMap<(char, char), HashMap<char, usize>> = rules
-            .keys()
-            .map(|&(l, r)| ((l, r), counts_after_n(&format!("{}{}", l, r), &rules, 20)))
-            .collect();
-
-        let after_20 = (0..20).fold(start.to_string(), |acc, _| step(&acc, &rules));
-        let mut total_counts = after_20
-            .chars()
-            .tuple_windows()
-            .map(|pair| &counts_after_20[&pair])
-            .fold(HashMap::new(), |acc: HashMap<char, usize>, counts| {
-                letters
-                    .iter()
-                    .map(|&c| (c, acc.get(&c).unwrap_or(&0) + counts.get(&c).unwrap_or(&0)))
-                    .collect()
-            });
-
-        let after_20_chars = after_20.chars().collect_vec();
-        for c in after_20_chars[1..(after_20_chars.len() - 1)].into_iter() {
-            *total_counts.get_mut(c).unwrap() -= 1;
-        }
-
-        let (min, max) = total_counts.values().minmax().into_option().unwrap();
+        let (min, max) = char_counts.into_values().minmax().into_option().unwrap();
         max - min
     };
-
     println!("Part 2: {}", result2);
 }
