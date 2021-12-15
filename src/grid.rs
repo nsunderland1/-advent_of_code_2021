@@ -47,15 +47,25 @@ impl<T> Grid<T> {
     }
 
     pub fn neighbours(&self, (x, y): (usize, usize)) -> impl Iterator<Item = (usize, usize)> {
-        // In flipped order for more efficient traversal I guess
-        Itertools::cartesian_product(
-            y.saturating_sub(1)..=y.saturating_add(1).min(self.height() - 1),
-            x.saturating_sub(1)..=x.saturating_add(1).min(self.width() - 1),
-        )
-        .map(|(y, x)| (x, y))
-        .filter(move |&(xi, yi)| xi != x || yi != y)
-        .sorted()
-        .dedup()
+        let x_plus_one = x.checked_add(1).filter(|&xi| xi < self.width());
+        let x_sub_one = x.checked_sub(1);
+        let y_plus_one = y.checked_add(1).filter(|&yi| yi < self.height());
+        let y_sub_one = y.checked_sub(1);
+
+        let make_point = |(l, r)| -> Option<_> { Some((l?, r?)) };
+
+        [
+            (x_sub_one, y_sub_one),
+            (Some(x), y_sub_one),
+            (x_plus_one, y_sub_one),
+            (x_sub_one, Some(y)),
+            (x_plus_one, Some(y)),
+            (x_sub_one, y_plus_one),
+            (Some(x), y_plus_one),
+            (x_plus_one, y_plus_one),
+        ]
+        .into_iter()
+        .filter_map(make_point)
     }
 
     pub fn neighbours_orthogonal(

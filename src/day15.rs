@@ -42,12 +42,10 @@ fn risk(grid: &Grid<u8>) -> u32 {
     frontier.push(Reverse(PointWithDistance((0, 0), 0)));
 
     loop {
-        let current = loop {
-            let Reverse(PointWithDistance(current, _)) = frontier.pop().unwrap();
-            if markers[current] == Marker::Unvisited {
-                break current;
-            }
-        };
+        let Reverse(PointWithDistance(current, _)) = frontier.pop().unwrap();
+        if markers[current] == Marker::Visited {
+            continue;
+        }
 
         if current == (grid.width() - 1, grid.height() - 1) {
             return distance[current];
