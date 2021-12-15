@@ -1,5 +1,6 @@
 use std::path::{Path, PathBuf};
 
+#[macro_use]
 mod grid;
 
 mod day01;

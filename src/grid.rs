@@ -5,6 +5,15 @@ use std::{
 
 use itertools::Itertools;
 
+#[macro_export]
+macro_rules! grid {
+    [$e:expr; $width:expr, $height:expr] => {
+        ::std::iter::repeat_with(|| ::std::iter::repeat($e).take($width))
+            .take($height)
+            .collect::<crate::grid::Grid<_>>()
+    };
+}
+
 #[derive(Clone)]
 pub struct Grid<T> {
     width: usize,
@@ -47,6 +56,24 @@ impl<T> Grid<T> {
         .filter(move |&(xi, yi)| xi != x || yi != y)
         .sorted()
         .dedup()
+    }
+
+    pub fn neighbours_orthogonal(
+        &self,
+        (x, y): (usize, usize),
+    ) -> impl Iterator<Item = (usize, usize)> {
+        [
+            x.checked_sub(1).map(|xi| (xi, y)),
+            x.checked_add(1)
+                .filter(|&xi| xi < self.width())
+                .map(|xi| (xi, y)),
+            y.checked_sub(1).map(|yi| (x, yi)),
+            y.checked_add(1)
+                .filter(|&yi| yi < self.height())
+                .map(|yi| (x, yi)),
+        ]
+        .into_iter()
+        .filter_map(|v| v)
     }
 
     pub fn into_flat_iter(self) -> impl Iterator<Item = T> {
