@@ -20,3 +20,7 @@ criterion = "0.3.5"
 [[bench]]
 name = "bench"
 harness = false
+
+# Uncomment before running `cargo flamegraph`
+# [profile.release]
+# debug = true
