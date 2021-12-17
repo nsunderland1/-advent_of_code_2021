@@ -11,7 +11,7 @@ use nom::{
 
 #[derive(Debug)]
 enum PacketType {
-    Literal(u64), // big enough?
+    Literal(u64),
     Operator(Vec<Packet>),
 }
 
@@ -152,11 +152,6 @@ pub fn run(input: &str) {
 
     let packet = parse_packet((&input, 0)).unwrap().1;
 
-    let result1 = sum_versions(&packet);
-
-    println!("Part 1: {}", result1);
-
-    let result2 = evaluate(&packet);
-
-    println!("Part 2: {}", result2);
+    println!("Part 1: {}", sum_versions(&packet));
+    println!("Part 2: {}", evaluate(&packet));
 }
