@@ -1,3 +1,5 @@
+use std::iter;
+
 use itertools::Itertools;
 use nom::{
     bits::complete::tag,
@@ -35,7 +37,10 @@ fn parse_literal(input: (&[u8], usize)) -> IResult<(&[u8], usize), PacketType> {
         pair(many0(parse_leading_block), parse_trailing_block),
         |(leading, trailing)| {
             PacketType::Literal(
-                (leading.into_iter().fold(0, |acc, i| (acc << 4) + i) << 4) + trailing,
+                leading
+                    .into_iter()
+                    .chain(iter::once(trailing))
+                    .fold(0, |acc, i| (acc << 4) + i),
             )
         },
     )(input)
@@ -69,7 +74,7 @@ fn parse_operator<'a>(input: (&'a [u8], usize)) -> IResult<(&'a [u8], usize), Pa
                 length_count(map(take(11usize), |n: usize| n), parse_packet),
             ),
         )),
-        |operands| PacketType::Operator(operands),
+        PacketType::Operator,
     )(input)
 }
 
