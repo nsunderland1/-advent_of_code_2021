@@ -1,4 +1,3 @@
-#[allow(unused)]
 use itertools::Itertools;
 use nom::{
     bits::complete::tag,
@@ -11,15 +10,9 @@ use nom::{
 };
 
 #[derive(Debug)]
-enum Operator {
-    Type0(Vec<Packet>),
-    Type1(Vec<Packet>),
-}
-
-#[derive(Debug)]
 enum PacketType {
     Literal(u64), // big enough?
-    Operator(Operator),
+    Operator(Vec<Packet>),
 }
 
 #[derive(Debug)]
@@ -42,7 +35,7 @@ fn parse_literal(input: (&[u8], usize)) -> IResult<(&[u8], usize), PacketType> {
         pair(many0(parse_leading_block), parse_trailing_block),
         |(leading, trailing)| {
             PacketType::Literal(
-                leading.into_iter().fold(0, |acc, i| (acc << 4) + i) << 4 + trailing,
+                (leading.into_iter().fold(0, |acc, i| (acc << 4) + i) << 4) + trailing,
             )
         },
     )(input)
@@ -51,7 +44,7 @@ fn parse_literal(input: (&[u8], usize)) -> IResult<(&[u8], usize), PacketType> {
 fn parse_operator<'a>(input: (&'a [u8], usize)) -> IResult<(&'a [u8], usize), PacketType> {
     map(
         alt((
-            pair(
+            preceded(
                 tag(0, 1usize),
                 flat_map(take(15usize), |n: usize| {
                     move |mut input: (&'a [u8], usize)| {
@@ -71,18 +64,12 @@ fn parse_operator<'a>(input: (&'a [u8], usize)) -> IResult<(&'a [u8], usize), Pa
                     }
                 }),
             ),
-            pair(
+            preceded(
                 tag(1, 1usize),
                 length_count(map(take(11usize), |n: usize| n), parse_packet),
             ),
         )),
-        move |(length_type_id, operands)| {
-            PacketType::Operator(match length_type_id {
-                0 => Operator::Type0(operands),
-                1 => Operator::Type1(operands),
-                _ => unreachable!(),
-            })
-        },
+        |operands| PacketType::Operator(operands),
     )(input)
 }
 
@@ -112,10 +99,43 @@ fn sum_versions(packet: &Packet) -> u64 {
     packet.version as u64
         + match &packet.kind {
             PacketType::Literal(_) => 0,
-            PacketType::Operator(Operator::Type0(subs) | Operator::Type1(subs)) => {
-                subs.iter().map(sum_versions).sum()
+            PacketType::Operator(operands) => operands.iter().map(sum_versions).sum(),
+        }
+}
+
+fn evaluate(packet: &Packet) -> u64 {
+    match packet {
+        Packet {
+            kind: PacketType::Literal(n),
+            ..
+        } => *n,
+        Packet {
+            kind: PacketType::Operator(operands),
+            type_id,
+            ..
+        } => {
+            let operands = operands.iter().map(evaluate);
+            match type_id {
+                0 => operands.sum(),
+                1 => operands.product(),
+                2 => operands.min().unwrap(),
+                3 => operands.max().unwrap(),
+                5 => {
+                    let (a, b) = operands.collect_tuple().unwrap();
+                    (a > b) as u64
+                }
+                6 => {
+                    let (a, b) = operands.collect_tuple().unwrap();
+                    (a < b) as u64
+                }
+                7 => {
+                    let (a, b) = operands.collect_tuple().unwrap();
+                    (a == b) as u64
+                }
+                _ => unreachable!(),
             }
         }
+    }
 }
 
 pub fn run(input: &str) {
@@ -132,14 +152,11 @@ pub fn run(input: &str) {
 
     let packet = parse_packet((&input, 0)).unwrap().1;
 
-    let result1 = { sum_versions(&packet) };
+    let result1 = sum_versions(&packet);
 
     println!("Part 1: {}", result1);
 
-    let result2 = {
-        // Part 2
-        0
-    };
+    let result2 = evaluate(&packet);
 
     println!("Part 2: {}", result2);
 }
