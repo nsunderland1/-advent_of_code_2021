@@ -25,16 +25,7 @@ impl Add for Number {
 
 impl Number {
     fn reduce(&mut self) {
-        loop {
-            let res = self.explode(0);
-            if res.is_some() {
-                continue;
-            };
-            let res = self.split();
-            if !res {
-                break;
-            }
-        }
+        while self.explode(0).is_some() || self.split() {}
     }
 
     fn explode(&mut self, depth: usize) -> Option<(Option<u64>, Option<u64>)> {
@@ -83,15 +74,15 @@ impl Number {
 
     fn add_to_leftmost(&mut self, val: u64) {
         match self {
-            Number::Regular(n) => *n += val,
-            Number::Pair(l, _) => l.add_to_leftmost(val),
+            Self::Regular(n) => *n += val,
+            Self::Pair(l, _) => l.add_to_leftmost(val),
         }
     }
 
     fn add_to_rightmost(&mut self, val: u64) {
         match self {
-            Number::Regular(n) => *n += val,
-            Number::Pair(_, r) => r.add_to_rightmost(val),
+            Self::Regular(n) => *n += val,
+            Self::Pair(_, r) => r.add_to_rightmost(val),
         }
     }
 
