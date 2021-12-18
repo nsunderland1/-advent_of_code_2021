@@ -1,6 +1,5 @@
 use std::ops::Add;
 
-#[allow(unused)]
 use itertools::Itertools;
 use nom::{
     branch::alt,
@@ -10,7 +9,7 @@ use nom::{
     IResult,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum Number {
     Regular(u64),
     Pair(Box<Number>, Box<Number>),
@@ -24,56 +23,40 @@ impl Add for Number {
     }
 }
 
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
-enum Action {
-    Exploded(Option<u64>, Option<u64>),
-    Split,
-    Kept,
-}
+// #[derive(PartialEq, Eq, PartialOrd, Ord)]
+// enum Action {
+//     Exploded(Option<u64>, Option<u64>),
+//     Split,
+//     Kept,
+// }
 
 impl Number {
     fn reduce(self) -> Self {
         let mut number = self;
         loop {
-            let (next_number, action) = number.reduce_aux(0);
+            let (next_number, res) = number.explode(0);
             number = next_number;
-            println!("{}", number.pretty_print());
-            if action == Action::Kept {
+            if res.is_some() {
+                continue;
+            };
+            let (next_number, res) = number.split();
+            number = next_number;
+            if !res {
                 break;
             }
         }
         number
     }
 
-    fn reduce_aux(self, depth: usize) -> (Self, Action) {
+    fn explode(self, depth: usize) -> (Self, Option<(Option<u64>, Option<u64>)>) {
         match self {
-            Self::Regular(n) if n >= 10 => (Self::split(n), Action::Split),
-            Self::Regular(_) => (self, Action::Kept),
+            Self::Regular(_) => (self, None),
             Self::Pair(l, r) => match (*l, *r) {
                 (Self::Regular(nl), Self::Regular(nr)) if depth >= 4 => {
-                    (Self::Regular(0), Action::Exploded(Some(nl), Some(nr)))
+                    (Self::Regular(0), Some((Some(nl), Some(nr))))
                 }
-                (l, r) => match l.reduce_aux(depth + 1) {
-                    (l_reduced, Action::Kept) => match r.reduce_aux(depth + 1) {
-                        (r_reduced, Action::Exploded(explode_left, explode_right)) => {
-                            let l_added = if let Some(explode_left) = explode_left {
-                                l_reduced.add_to_rightmost(explode_left)
-                            } else {
-                                l_reduced
-                            };
-                            (
-                                Self::Pair(Box::new(l_added), Box::new(r_reduced)),
-                                Action::Exploded(None, explode_right),
-                            )
-                        }
-                        (r_reduced, action) => {
-                            (Self::Pair(Box::new(l_reduced), Box::new(r_reduced)), action)
-                        }
-                    },
-                    (l_reduced, Action::Split) => {
-                        (Self::Pair(Box::new(l_reduced), Box::new(r)), Action::Split)
-                    }
-                    (l_reduced, Action::Exploded(explode_left, explode_right)) => {
+                (l, r) => match l.explode(depth + 1) {
+                    (l_reduced, Some((explode_left, explode_right))) => {
                         let r_added = if let Some(explode_right) = explode_right {
                             r.add_to_leftmost(explode_right)
                         } else {
@@ -81,11 +64,52 @@ impl Number {
                         };
                         (
                             Self::Pair(Box::new(l_reduced), Box::new(r_added)),
-                            Action::Exploded(explode_left, None),
+                            Some((explode_left, None)),
                         )
                     }
+                    (l_reduced, None) => match r.explode(depth + 1) {
+                        (r_reduced, Some((explode_left, explode_right))) => {
+                            let l_added = if let Some(explode_left) = explode_left {
+                                l_reduced.add_to_rightmost(explode_left)
+                            } else {
+                                l_reduced
+                            };
+                            (
+                                Self::Pair(Box::new(l_added), Box::new(r_reduced)),
+                                Some((None, explode_right)),
+                            )
+                        }
+                        (r_reduced, None) => {
+                            (Self::Pair(Box::new(l_reduced), Box::new(r_reduced)), None)
+                        }
+                    },
                 },
             },
+        }
+    }
+
+    fn split(self) -> (Self, bool) {
+        match self {
+            Self::Regular(n) if n >= 10 => (
+                Self::Pair(
+                    Box::new(Self::Regular(n / 2)),
+                    Box::new(Self::Regular(if n % 2 == 0 { n / 2 } else { n / 2 + 1 })),
+                ),
+                true,
+            ),
+            Self::Regular(_) => (self, false),
+            Self::Pair(l, r) => {
+                let (l_split, l_was_split) = l.split();
+                if l_was_split {
+                    (Self::Pair(Box::new(l_split), r), true)
+                } else {
+                    let (r_split, r_was_split) = r.split();
+                    (
+                        Self::Pair(Box::new(l_split), Box::new(r_split)),
+                        r_was_split,
+                    )
+                }
+            }
         }
     }
 
@@ -103,24 +127,10 @@ impl Number {
         }
     }
 
-    fn split(n: u64) -> Self {
-        Self::Pair(
-            Box::new(Self::Regular(n / 2)),
-            Box::new(Self::Regular(if n % 2 == 0 { n / 2 } else { n / 2 + 1 })),
-        )
-    }
-
     fn magnitude(&self) -> u64 {
         match self {
             Self::Regular(n) => *n,
             Self::Pair(l, r) => 3 * l.magnitude() + 2 * r.magnitude(),
-        }
-    }
-
-    fn pretty_print(&self) -> String {
-        match self {
-            Self::Regular(n) => n.to_string(),
-            Self::Pair(l, r) => format!("[{},{}]", l.pretty_print(), r.pretty_print()),
         }
     }
 }
@@ -146,15 +156,29 @@ pub fn run(input: &str) {
         .collect();
 
     let result1 = {
-        let sum = input.into_iter().reduce(|l, r| (l + r).reduce()).unwrap();
+        let sum = input
+            .clone()
+            .into_iter()
+            .reduce(|l, r| (l + r.clone()).reduce())
+            .unwrap();
         sum.magnitude()
     };
 
     println!("Part 1: {}", result1);
 
     let result2 = {
-        // Part 2
-        0
+        input
+            .into_iter()
+            .permutations(2)
+            .map(|permutation| {
+                permutation
+                    .into_iter()
+                    .reduce(|l, r| (l + r).reduce())
+                    .unwrap()
+                    .magnitude()
+            })
+            .max()
+            .unwrap()
     };
 
     println!("Part 2: {}", result2);
