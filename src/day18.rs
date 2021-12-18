@@ -23,13 +23,6 @@ impl Add for Number {
     }
 }
 
-// #[derive(PartialEq, Eq, PartialOrd, Ord)]
-// enum Action {
-//     Exploded(Option<u64>, Option<u64>),
-//     Split,
-//     Kept,
-// }
-
 impl Number {
     fn reduce(self) -> Self {
         let mut number = self;
@@ -39,8 +32,8 @@ impl Number {
             if res.is_some() {
                 continue;
             };
-            let (next_number, res) = number.split();
-            number = next_number;
+            // mutates the number
+            let res = number.split();
             if !res {
                 break;
             }
@@ -88,28 +81,15 @@ impl Number {
         }
     }
 
-    fn split(self) -> (Self, bool) {
+    fn split(&mut self) -> bool {
         match self {
-            Self::Regular(n) if n >= 10 => (
-                Self::Pair(
-                    Box::new(Self::Regular(n / 2)),
-                    Box::new(Self::Regular(if n % 2 == 0 { n / 2 } else { n / 2 + 1 })),
-                ),
-                true,
-            ),
-            Self::Regular(_) => (self, false),
-            Self::Pair(l, r) => {
-                let (l_split, l_was_split) = l.split();
-                if l_was_split {
-                    (Self::Pair(Box::new(l_split), r), true)
-                } else {
-                    let (r_split, r_was_split) = r.split();
-                    (
-                        Self::Pair(Box::new(l_split), Box::new(r_split)),
-                        r_was_split,
-                    )
-                }
+            Self::Regular(n) if *n >= 10 => {
+                *self = Self::Regular(*n / 2)
+                    + Self::Regular(if *n % 2 == 0 { *n / 2 } else { *n / 2 + 1 });
+                true
             }
+            Self::Regular(_) => false,
+            Self::Pair(l, r) => l.split() || r.split(), // takes advantage of short-circuiting
         }
     }
 
