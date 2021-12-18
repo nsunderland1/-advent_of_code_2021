@@ -24,57 +24,45 @@ impl Add for Number {
 }
 
 impl Number {
-    fn reduce(self) -> Self {
-        let mut number = self;
+    fn reduce(&mut self) {
         loop {
-            let (next_number, res) = number.explode(0);
-            number = next_number;
+            let res = self.explode(0);
             if res.is_some() {
                 continue;
             };
-            // mutates the number
-            let res = number.split();
+            let res = self.split();
             if !res {
                 break;
             }
         }
-        number
     }
 
-    fn explode(self, depth: usize) -> (Self, Option<(Option<u64>, Option<u64>)>) {
+    fn explode(&mut self, depth: usize) -> Option<(Option<u64>, Option<u64>)> {
         match self {
-            Self::Regular(_) => (self, None),
-            Self::Pair(l, r) => match (*l, *r) {
+            Self::Regular(_) => None,
+            Self::Pair(l, r) => match (&mut **l, &mut **r) {
                 (Self::Regular(nl), Self::Regular(nr)) if depth >= 4 => {
-                    (Self::Regular(0), Some((Some(nl), Some(nr))))
+                    // We need to get the values out before mutating
+                    let nl = *nl;
+                    let nr = *nr;
+                    *self = Self::Regular(0);
+                    Some((Some(nl), Some(nr)))
                 }
                 (l, r) => match l.explode(depth + 1) {
-                    (l_reduced, Some((explode_left, explode_right))) => {
-                        let r_added = if let Some(explode_right) = explode_right {
-                            r.add_to_leftmost(explode_right)
-                        } else {
-                            r
-                        };
-                        (
-                            Self::Pair(Box::new(l_reduced), Box::new(r_added)),
-                            Some((explode_left, None)),
-                        )
+                    Some((explode_left, explode_right)) => {
+                        if let Some(explode_right) = explode_right {
+                            r.add_to_leftmost(explode_right);
+                        }
+                        Some((explode_left, None))
                     }
-                    (l_reduced, None) => match r.explode(depth + 1) {
-                        (r_reduced, Some((explode_left, explode_right))) => {
-                            let l_added = if let Some(explode_left) = explode_left {
-                                l_reduced.add_to_rightmost(explode_left)
-                            } else {
-                                l_reduced
-                            };
-                            (
-                                Self::Pair(Box::new(l_added), Box::new(r_reduced)),
-                                Some((None, explode_right)),
-                            )
+                    None => match r.explode(depth + 1) {
+                        Some((explode_left, explode_right)) => {
+                            if let Some(explode_left) = explode_left {
+                                l.add_to_rightmost(explode_left)
+                            }
+                            Some((None, explode_right))
                         }
-                        (r_reduced, None) => {
-                            (Self::Pair(Box::new(l_reduced), Box::new(r_reduced)), None)
-                        }
+                        None => None,
                     },
                 },
             },
@@ -93,17 +81,17 @@ impl Number {
         }
     }
 
-    fn add_to_leftmost(self, val: u64) -> Self {
+    fn add_to_leftmost(&mut self, val: u64) {
         match self {
-            Number::Regular(n) => Number::Regular(n + val),
-            Number::Pair(l, r) => Number::Pair(Box::new(l.add_to_leftmost(val)), r),
+            Number::Regular(n) => *n += val,
+            Number::Pair(l, _) => l.add_to_leftmost(val),
         }
     }
 
-    fn add_to_rightmost(self, val: u64) -> Self {
+    fn add_to_rightmost(&mut self, val: u64) {
         match self {
-            Number::Regular(n) => Number::Regular(n + val),
-            Number::Pair(l, r) => Number::Pair(l, Box::new(r.add_to_rightmost(val))),
+            Number::Regular(n) => *n += val,
+            Number::Pair(_, r) => r.add_to_rightmost(val),
         }
     }
 
@@ -139,7 +127,11 @@ pub fn run(input: &str) {
         let sum = input
             .clone()
             .into_iter()
-            .reduce(|l, r| (l + r.clone()).reduce())
+            .reduce(|l, r| {
+                let mut res = l + r;
+                res.reduce();
+                res
+            })
             .unwrap();
         sum.magnitude()
     };
@@ -153,7 +145,11 @@ pub fn run(input: &str) {
             .map(|permutation| {
                 permutation
                     .into_iter()
-                    .reduce(|l, r| (l + r).reduce())
+                    .reduce(|l, r| {
+                        let mut res = l + r;
+                        res.reduce();
+                        res
+                    })
                     .unwrap()
                     .magnitude()
             })
