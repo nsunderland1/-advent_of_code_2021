@@ -17,35 +17,8 @@ impl State {
     }
 }
 
-const DIRAC_DIE_ROLLS: [(usize, usize, usize); 27] = [
-    (1, 1, 1),
-    (1, 1, 2),
-    (1, 1, 3),
-    (1, 2, 1),
-    (1, 2, 2),
-    (1, 2, 3),
-    (1, 3, 1),
-    (1, 3, 2),
-    (1, 3, 3),
-    (2, 1, 1),
-    (2, 1, 2),
-    (2, 1, 3),
-    (2, 2, 1),
-    (2, 2, 2),
-    (2, 2, 3),
-    (2, 3, 1),
-    (2, 3, 2),
-    (2, 3, 3),
-    (3, 1, 1),
-    (3, 1, 2),
-    (3, 1, 3),
-    (3, 2, 1),
-    (3, 2, 2),
-    (3, 2, 3),
-    (3, 3, 1),
-    (3, 3, 2),
-    (3, 3, 3),
-];
+const DIRAC_DIE_COMBINATIONS: [(usize, usize); 7] =
+    [(3, 1), (4, 3), (5, 6), (6, 7), (7, 6), (8, 3), (9, 1)];
 
 fn part2(state_cache: &mut Vec<(usize, usize)>, state: State) -> (usize, usize) {
     if state.p1_score >= 21 {
@@ -62,9 +35,9 @@ fn part2(state_cache: &mut Vec<(usize, usize)>, state: State) -> (usize, usize) 
 
     let mut wins = (0, 0);
 
-    for (a, b, c) in DIRAC_DIE_ROLLS {
+    for (roll, count) in DIRAC_DIE_COMBINATIONS {
         let mut next_state = state;
-        next_state.p1_pos += a + b + c;
+        next_state.p1_pos += roll;
         next_state.p1_pos = (next_state.p1_pos - 1) % 10 + 1;
         next_state.p1_score += next_state.p1_pos;
 
@@ -78,8 +51,8 @@ fn part2(state_cache: &mut Vec<(usize, usize)>, state: State) -> (usize, usize) 
             },
         );
 
-        wins.0 += p1_wins;
-        wins.1 += p2_wins;
+        wins.0 += count * p1_wins;
+        wins.1 += count * p2_wins;
     }
 
     state_cache[state.cache_index()] = wins;
