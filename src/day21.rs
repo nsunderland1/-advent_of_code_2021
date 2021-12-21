@@ -14,7 +14,7 @@ fn dirac_die_roll3() -> impl Iterator<Item = (usize, usize, usize)> {
     (1..=3).flat_map(|i| (1..=3).flat_map(move |j| (1..=3).map(move |k| (i, j, k))))
 }
 
-fn part2(state_cache: &mut HashMap<State, (usize, usize)>, state: State) {
+fn part2(state_cache: &mut HashMap<State, (usize, usize)>, state: State) -> (usize, usize) {
     let mut wins = (0, 0);
     for (a, b, c) in dirac_die_roll3() {
         let mut next_state = state;
@@ -38,8 +38,7 @@ fn part2(state_cache: &mut HashMap<State, (usize, usize)>, state: State) {
                 wins.0 += entry.0;
                 wins.1 += entry.1;
             } else {
-                part2(state_cache, next_state);
-                let entry = state_cache.get(&next_state).unwrap();
+                let entry = part2(state_cache, next_state);
                 wins.0 += entry.0;
                 wins.1 += entry.1;
             }
@@ -47,6 +46,7 @@ fn part2(state_cache: &mut HashMap<State, (usize, usize)>, state: State) {
     }
 
     state_cache.insert(state, wins);
+    wins
 }
 
 pub fn run(input: &str) {
@@ -97,9 +97,8 @@ pub fn run(input: &str) {
         };
 
         let mut cache = HashMap::new();
-        part2(&mut cache, state);
 
-        let wins = cache.get(&state).unwrap();
+        let wins = part2(&mut cache, state);
         std::cmp::max(wins.0, wins.1)
     };
 
