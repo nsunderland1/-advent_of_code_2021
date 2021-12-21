@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use itertools::Itertools;
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
@@ -10,24 +8,61 @@ struct State {
     p2_pos: usize,
 }
 
-fn dirac_die_roll3() -> impl Iterator<Item = (usize, usize, usize)> {
-    (1..=3).flat_map(|i| (1..=3).flat_map(move |j| (1..=3).map(move |k| (i, j, k))))
+impl State {
+    fn cache_index(&self) -> usize {
+        self.p1_score * 10 * 21 * 10
+            + (self.p1_pos - 1) * 21 * 10
+            + self.p2_score * 10
+            + (self.p2_pos - 1)
+    }
 }
 
-fn part2(state_cache: &mut HashMap<State, (usize, usize)>, state: State) -> (usize, usize) {
+const DIRAC_DIE_ROLLS: [(usize, usize, usize); 27] = [
+    (1, 1, 1),
+    (1, 1, 2),
+    (1, 1, 3),
+    (1, 2, 1),
+    (1, 2, 2),
+    (1, 2, 3),
+    (1, 3, 1),
+    (1, 3, 2),
+    (1, 3, 3),
+    (2, 1, 1),
+    (2, 1, 2),
+    (2, 1, 3),
+    (2, 2, 1),
+    (2, 2, 2),
+    (2, 2, 3),
+    (2, 3, 1),
+    (2, 3, 2),
+    (2, 3, 3),
+    (3, 1, 1),
+    (3, 1, 2),
+    (3, 1, 3),
+    (3, 2, 1),
+    (3, 2, 2),
+    (3, 2, 3),
+    (3, 3, 1),
+    (3, 3, 2),
+    (3, 3, 3),
+];
+
+fn part2(state_cache: &mut Vec<(usize, usize)>, state: State) -> (usize, usize) {
     if state.p1_score >= 21 {
         return (1, 0);
     }
     if state.p2_score >= 21 {
         return (0, 1);
     }
-    if let Some(&cached) = state_cache.get(&state) {
+
+    let cached = state_cache[state.cache_index()];
+    if cached.0 > 0 || cached.1 > 0 {
         return cached;
     }
 
     let mut wins = (0, 0);
 
-    for (a, b, c) in dirac_die_roll3() {
+    for (a, b, c) in DIRAC_DIE_ROLLS {
         let mut next_state = state;
         next_state.p1_pos += a + b + c;
         next_state.p1_pos = (next_state.p1_pos - 1) % 10 + 1;
@@ -47,7 +82,7 @@ fn part2(state_cache: &mut HashMap<State, (usize, usize)>, state: State) -> (usi
         wins.1 += p2_wins;
     }
 
-    state_cache.insert(state, wins);
+    state_cache[state.cache_index()] = wins;
     wins
 }
 
@@ -98,7 +133,7 @@ pub fn run(input: &str) {
             p2_score: 0,
         };
 
-        let mut cache = HashMap::new();
+        let mut cache = vec![(0, 0); 21 * 10 * 21 * 10];
 
         let wins = part2(&mut cache, state);
         std::cmp::max(wins.0, wins.1)
