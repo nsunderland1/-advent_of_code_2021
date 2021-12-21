@@ -131,3 +131,52 @@ where
         }
     }
 }
+
+pub struct WindowMut<'a, T> {
+    grid: &'a mut Grid<T>,
+    min: (usize, usize),
+    max: (usize, usize),
+}
+
+impl<'a, T> WindowMut<'a, T> {
+    pub fn new(grid: &'a mut Grid<T>, min: (usize, usize), max: (usize, usize)) -> Self {
+        assert!((0..grid.width()).contains(&min.0));
+        assert!((0..grid.width()).contains(&(min.0 + max.0 - 1)));
+        assert!((0..grid.height()).contains(&min.1));
+        assert!((0..grid.height()).contains(&(min.1 + max.1 - 1)));
+        assert!(min.0 < max.0);
+        assert!(min.1 < max.1);
+
+        Self { grid, min, max }
+    }
+
+    pub fn grow_once(self) -> Self {
+        Self::new(
+            self.grid,
+            (self.min.0 - 1, self.min.1 - 1),
+            (self.max.0 + 1, self.max.1 + 1),
+        )
+    }
+
+    pub fn width(&self) -> usize {
+        self.max.0 - self.min.0
+    }
+
+    pub fn height(&self) -> usize {
+        self.max.1 - self.min.1
+    }
+}
+
+impl<'a, T> Index<(usize, usize)> for WindowMut<'a, T> {
+    type Output = T;
+
+    fn index(&self, (x, y): (usize, usize)) -> &Self::Output {
+        &self.grid[(x + self.min.0, y + self.min.1)]
+    }
+}
+
+impl<'a, T> IndexMut<(usize, usize)> for WindowMut<'a, T> {
+    fn index_mut(&mut self, (x, y): (usize, usize)) -> &mut Self::Output {
+        &mut self.grid[(x + self.min.0, y + self.min.1)]
+    }
+}
