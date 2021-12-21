@@ -15,34 +15,36 @@ fn dirac_die_roll3() -> impl Iterator<Item = (usize, usize, usize)> {
 }
 
 fn part2(state_cache: &mut HashMap<State, (usize, usize)>, state: State) -> (usize, usize) {
+    if state.p1_score >= 21 {
+        return (1, 0);
+    }
+    if state.p2_score >= 21 {
+        return (0, 1);
+    }
+    if let Some(&cached) = state_cache.get(&state) {
+        return cached;
+    }
+
     let mut wins = (0, 0);
+
     for (a, b, c) in dirac_die_roll3() {
         let mut next_state = state;
         next_state.p1_pos += a + b + c;
-        next_state.p1_score += (next_state.p1_pos - 1) % 10 + 1;
-        if next_state.p1_score >= 21 {
-            wins.0 += 1;
-            continue;
-        }
+        next_state.p1_pos = (next_state.p1_pos - 1) % 10 + 1;
+        next_state.p1_score += next_state.p1_pos;
 
-        for (a, b, c) in dirac_die_roll3() {
-            let mut next_state = next_state;
-            next_state.p2_pos += a + b + c;
-            next_state.p2_score += (next_state.p2_pos - 1) % 10 + 1;
-            if next_state.p2_score >= 21 {
-                wins.1 += 1;
-                continue;
-            }
+        let (p2_wins, p1_wins) = part2(
+            state_cache,
+            State {
+                p1_pos: next_state.p2_pos,
+                p1_score: next_state.p2_score,
+                p2_pos: next_state.p1_pos,
+                p2_score: next_state.p1_score,
+            },
+        );
 
-            if let Some(entry) = state_cache.get(&next_state) {
-                wins.0 += entry.0;
-                wins.1 += entry.1;
-            } else {
-                let entry = part2(state_cache, next_state);
-                wins.0 += entry.0;
-                wins.1 += entry.1;
-            }
-        }
+        wins.0 += p1_wins;
+        wins.1 += p2_wins;
     }
 
     state_cache.insert(state, wins);
