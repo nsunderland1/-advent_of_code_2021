@@ -1,5 +1,5 @@
 // note: doesn't work for the example input
-pub fn run(input: &str) {
+pub fn run(_input: &str) {
     let result1 = 14460; // computed by hand
 
     println!("Part 1: {}", result1);

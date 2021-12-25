@@ -9,7 +9,6 @@ use nom::{
     sequence::{pair, preceded, separated_pair},
     IResult,
 };
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 #[derive(Debug, Clone, Copy)]
 enum Register {
