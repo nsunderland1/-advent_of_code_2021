@@ -4,7 +4,7 @@ use itertools::iproduct;
 #[allow(unused)]
 use itertools::Itertools;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Step {
     state: bool,
     x: RangeInclusive<isize>,
@@ -48,6 +48,11 @@ fn index((x, y, z): (isize, isize, isize)) -> Option<(usize, usize, usize)> {
     }
 }
 
+enum Event {
+    Start,
+    End,
+}
+
 pub fn run(input: &str) {
     let input: Vec<_> = input.lines().map(parse_line).collect();
 
@@ -78,10 +83,12 @@ pub fn run(input: &str) {
 
     println!("Part 1: {}", result1);
 
-    let result2 = {
-        // Part 2
-        0
-    };
+    // let result2 = {
+    //     let x_events = input
+    //         .iter()
+    //         .flat_map(|&step| [(step.x.start(), step.clone()), (step.x.end(), step.clone())])
+    //         .sorted_by_key(|(x, _)| x);
+    // };
 
-    println!("Part 2: {}", result2);
+    // println!("Part 2: {}", result2);
 }
