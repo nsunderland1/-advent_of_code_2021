@@ -1,6 +1,6 @@
-use std::ops::RangeInclusive;
+use std::{collections::HashSet, ops::RangeInclusive};
 
-use itertools::iproduct;
+use itertools::{iproduct, Itertools};
 use nom::{
     branch::alt,
     bytes::complete::tag,
@@ -60,13 +60,21 @@ fn index((x, y, z): (isize, isize, isize)) -> Option<(usize, usize, usize)> {
     }
 }
 
-// enum Event {
-//     Start,
-//     End,
-// }
+#[derive(Debug, Clone)]
+enum EventKind {
+    Start,
+    End,
+}
+
+#[derive(Debug, Clone)]
+struct Event {
+    kind: EventKind,
+    position: isize,
+    step_id: usize,
+}
 
 pub fn run(input: &str) {
-    let input: Vec<_> = input
+    let steps: Vec<_> = input
         .lines()
         .map(|line| parse_step(&line).unwrap().1)
         .collect();
@@ -74,7 +82,7 @@ pub fn run(input: &str) {
     let mut grid = vec![vec![vec![false; 101]; 101]; 101];
 
     let result1 = {
-        for step in input.iter() {
+        for step in steps.iter() {
             if *step.x.start() > 50
                 || *step.x.end() < -50
                 || *step.y.start() > 50
@@ -98,12 +106,152 @@ pub fn run(input: &str) {
 
     println!("Part 1: {}", result1);
 
-    // let result2 = {
-    //     let x_events = input
-    //         .iter()
-    //         .flat_map(|&step| [(step.x.start(), step.clone()), (step.x.end(), step.clone())])
-    //         .sorted_by_key(|(x, _)| x);
-    // };
+    // TODO: works for my input, is somehow off by 10 for the example input
+    let result2 = {
+        let x_events = steps
+            .iter()
+            .enumerate()
+            .flat_map(|(i, step)| {
+                [
+                    Event {
+                        kind: EventKind::Start,
+                        position: *step.x.start(),
+                        step_id: i,
+                    },
+                    Event {
+                        kind: EventKind::End,
+                        position: *step.x.end(),
+                        step_id: i,
+                    },
+                ]
+            })
+            .sorted_by_key(|event| event.position);
 
-    // println!("Part 2: {}", result2);
+        let y_events = steps
+            .iter()
+            .enumerate()
+            .map(|(i, step)| {
+                [
+                    Event {
+                        kind: EventKind::Start,
+                        position: *step.y.start(),
+                        step_id: i,
+                    },
+                    Event {
+                        kind: EventKind::End,
+                        position: *step.y.end(),
+                        step_id: i,
+                    },
+                ]
+            })
+            .collect_vec();
+
+        let z_events = steps
+            .iter()
+            .enumerate()
+            .map(|(i, step)| {
+                [
+                    Event {
+                        kind: EventKind::Start,
+                        position: *step.z.start(),
+                        step_id: i,
+                    },
+                    Event {
+                        kind: EventKind::End,
+                        position: *step.z.end(),
+                        step_id: i,
+                    },
+                ]
+            })
+            .collect_vec();
+
+        let mut active_steps: HashSet<usize> = HashSet::with_capacity(steps.len());
+        let mut area_start = isize::MIN;
+        let mut total_cubes = 0usize;
+
+        for event in x_events {
+            let y_events = active_steps
+                .iter()
+                .flat_map(|&i| y_events[i].clone())
+                // TODO: be smarter and avoid re-sorting every time?
+                .sorted_by_key(|event| event.position);
+
+            let mut y_cubes = 0;
+            {
+                let mut active_steps: HashSet<usize> = HashSet::with_capacity(active_steps.len());
+                let mut area_start = isize::MIN;
+
+                for event in y_events {
+                    let z_events = active_steps
+                        .iter()
+                        .flat_map(|&i| z_events[i].clone())
+                        // TODO: be smarter and avoid re-sorting every time?
+                        .sorted_by_key(|event| event.position);
+
+                    let mut z_cubes = 0;
+                    {
+                        let mut active_steps: HashSet<usize> =
+                            HashSet::with_capacity(active_steps.len());
+                        let mut area_start = isize::MIN;
+
+                        for event in z_events {
+                            if let Some(max) = active_steps.iter().copied().max() {
+                                if steps[max].state {
+                                    z_cubes += match event.kind {
+                                        EventKind::Start => event.position - area_start,
+                                        EventKind::End => event.position - area_start + 1,
+                                    }
+                                }
+                            }
+
+                            match event.kind {
+                                EventKind::Start => {
+                                    active_steps.insert(event.step_id);
+                                    area_start = event.position;
+                                }
+                                EventKind::End => {
+                                    active_steps.remove(&event.step_id);
+                                    area_start = event.position + 1;
+                                }
+                            };
+                        }
+                    }
+
+                    match event.kind {
+                        EventKind::Start => {
+                            active_steps.insert(event.step_id);
+                            z_cubes *= event.position - area_start;
+                            area_start = event.position;
+                        }
+                        EventKind::End => {
+                            active_steps.remove(&event.step_id);
+                            z_cubes *= event.position - area_start + 1;
+                            area_start = event.position + 1;
+                        }
+                    };
+
+                    y_cubes += z_cubes;
+                }
+            }
+
+            match event.kind {
+                EventKind::Start => {
+                    active_steps.insert(event.step_id);
+                    y_cubes *= event.position - area_start;
+                    area_start = event.position;
+                }
+                EventKind::End => {
+                    active_steps.remove(&event.step_id);
+                    y_cubes *= event.position - area_start + 1;
+                    area_start = event.position + 1;
+                }
+            };
+
+            total_cubes += y_cubes as usize;
+        }
+
+        total_cubes
+    };
+
+    println!("Part 2: {}", result2);
 }
