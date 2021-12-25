@@ -1,66 +1,61 @@
-#[allow(unused)]
 use itertools::Itertools;
 
+use crate::grid::Grid;
+
 pub fn run(input: &str) {
-    let mut grid: Vec<_> = input.lines().map(|s| s.chars().collect_vec()).collect();
+    let mut grid: Grid<_> = input.lines().map(|line| line.chars()).collect();
+    let mut east_positions = Itertools::cartesian_product(0..grid.height(), 0..grid.width())
+        .map(|(y, x)| (x, y))
+        .filter(|&(y, x)| grid[(x, y)] == '>')
+        .collect_vec();
+    let mut south_positions = Itertools::cartesian_product(0..grid.height(), 0..grid.width())
+        .map(|(y, x)| (x, y))
+        .filter(|&pos| grid[pos] == 'v')
+        .collect_vec();
 
-    let result1 = {
-        let mut res = 0;
-        for i in 1.. {
-            let mut updates_done = false;
-            let grid_len = grid.len();
-            let row_len = grid[0].len();
-            {
-                let mut updates = Vec::with_capacity(grid.len() * grid[0].len());
+    let mut updates =
+        Vec::with_capacity(std::cmp::max(east_positions.len(), south_positions.len()));
 
-                for row in 0..grid.len() {
-                    for col in 0..grid[row].len() {
-                        if grid[row][col] == '>' && grid[row][(col + 1) % grid[row].len()] == '.' {
-                            updates.push((row, col));
-                            updates_done = true;
-                        }
-                    }
-                }
-
-                for (row, col) in updates {
-                    grid[row][col] = '.';
-                    grid[row][(col + 1) % row_len] = '>';
-                }
-            }
-
-            {
-                let mut updates = Vec::with_capacity(grid.len() * grid[0].len());
-
-                for row in 0..grid.len() {
-                    for col in 0..grid[row].len() {
-                        if grid[row][col] == 'v' && grid[(row + 1) % grid.len()][col] == '.' {
-                            updates.push((row, col));
-                            updates_done = true;
-                        }
-                    }
-                }
-
-                for (row, col) in updates {
-                    grid[row][col] = '.';
-                    grid[(row + 1) % grid_len][col] = 'v';
+    let mut res = 0;
+    for i in 1.. {
+        let mut updates_done = false;
+        let grid_len = grid.height();
+        let row_len = grid.width();
+        {
+            for pos in east_positions.iter_mut() {
+                if grid[((pos.0 + 1) % grid.width(), pos.1)] == '.' {
+                    updates.push(*pos);
+                    pos.0 = (pos.0 + 1) % grid.width();
+                    updates_done = true;
                 }
             }
 
-            if !updates_done {
-                res = i;
-                break;
+            for (x, y) in updates.drain(..) {
+                grid[(x, y)] = '.';
+                grid[((x + 1) % row_len, y)] = '>';
             }
         }
 
-        res
-    };
+        {
+            for pos in south_positions.iter_mut() {
+                if grid[(pos.0, (pos.1 + 1) % grid.height())] == '.' {
+                    updates.push(*pos);
+                    pos.1 = (pos.1 + 1) % grid.height();
+                    updates_done = true;
+                }
+            }
 
-    println!("Part 1: {}", result1);
+            for (x, y) in updates.drain(..) {
+                grid[(x, y)] = '.';
+                grid[(x, (y + 1) % grid_len)] = 'v';
+            }
+        }
 
-    let result2 = {
-        // Part 2
-        0
-    };
+        if !updates_done {
+            res = i;
+            break;
+        }
+    }
 
-    println!("Part 2: {}", result2);
+    println!("Part 1: {}", res);
 }
