@@ -1,8 +1,14 @@
 use std::ops::RangeInclusive;
 
 use itertools::iproduct;
-#[allow(unused)]
-use itertools::Itertools;
+use nom::{
+    branch::alt,
+    bytes::complete::tag,
+    character::complete::i64 as parse_i64,
+    combinator::{map, value},
+    sequence::{pair, preceded, separated_pair, tuple},
+    IResult,
+};
 
 #[derive(Debug, Clone)]
 struct Step {
@@ -12,31 +18,37 @@ struct Step {
     z: RangeInclusive<isize>,
 }
 
-fn parse_line(s: &str) -> Step {
-    let (state, ranges) = s.split_once(' ').unwrap();
-    let state = match state {
-        "on" => true,
-        "off" => false,
-        _ => unreachable!(),
-    };
-    let (x, y, z) = ranges
-        .split(',')
-        .map(|range| {
-            let (start, end) = range
-                .split('=')
-                .skip(1)
-                .next()
-                .unwrap()
-                .split("..")
-                .map(|s| s.parse().unwrap())
-                .collect_tuple()
-                .unwrap();
-            start..=end
-        })
-        .collect_tuple()
-        .unwrap();
+fn parse_state(input: &str) -> IResult<&str, bool> {
+    alt((value(true, tag("on")), value(false, tag("off"))))(input)
+}
 
-    Step { state, x, y, z }
+fn parse_range<'a>(
+    label: &'static str,
+) -> impl FnMut(&'a str) -> IResult<&'a str, RangeInclusive<isize>> {
+    preceded(
+        pair(tag(label), tag("=")),
+        map(
+            separated_pair(parse_i64, tag(".."), parse_i64),
+            |(start, end)| start as isize..=end as isize,
+        ),
+    )
+}
+
+fn parse_step(input: &str) -> IResult<&str, Step> {
+    map(
+        separated_pair(
+            parse_state,
+            tag(" "),
+            tuple((
+                parse_range("x"),
+                tag(","),
+                parse_range("y"),
+                tag(","),
+                parse_range("z"),
+            )),
+        ),
+        |(state, (x, _, y, _, z))| Step { state, x, y, z },
+    )(input)
 }
 
 fn index((x, y, z): (isize, isize, isize)) -> Option<(usize, usize, usize)> {
@@ -48,13 +60,16 @@ fn index((x, y, z): (isize, isize, isize)) -> Option<(usize, usize, usize)> {
     }
 }
 
-enum Event {
-    Start,
-    End,
-}
+// enum Event {
+//     Start,
+//     End,
+// }
 
 pub fn run(input: &str) {
-    let input: Vec<_> = input.lines().map(parse_line).collect();
+    let input: Vec<_> = input
+        .lines()
+        .map(|line| parse_step(&line).unwrap().1)
+        .collect();
 
     let mut grid = vec![vec![vec![false; 101]; 101]; 101];
 
