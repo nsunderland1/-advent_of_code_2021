@@ -6,7 +6,7 @@ pub fn run(input: &str) {
     let mut grid: Grid<_> = input.lines().map(|line| line.chars()).collect();
     let mut east_positions = Itertools::cartesian_product(0..grid.height(), 0..grid.width())
         .map(|(y, x)| (x, y))
-        .filter(|&(y, x)| grid[(x, y)] == '>')
+        .filter(|&(x, y)| grid[(x, y)] == '>')
         .collect_vec();
     let mut south_positions = Itertools::cartesian_product(0..grid.height(), 0..grid.width())
         .map(|(y, x)| (x, y))
