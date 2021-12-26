@@ -1,4 +1,4 @@
-use std::{collections::HashSet, ops::RangeInclusive};
+use std::ops::RangeInclusive;
 
 use itertools::{iproduct, Itertools};
 use nom::{
@@ -165,7 +165,7 @@ pub fn run(input: &str) {
             })
             .collect_vec();
 
-        let mut active_steps: HashSet<usize> = HashSet::with_capacity(steps.len());
+        let mut active_steps: Vec<usize> = Vec::with_capacity(steps.len());
         let mut area_start = isize::MIN;
         let mut total_cubes = 0usize;
 
@@ -178,7 +178,7 @@ pub fn run(input: &str) {
 
             let mut y_cubes = 0;
             {
-                let mut active_steps: HashSet<usize> = HashSet::with_capacity(active_steps.len());
+                let mut active_steps: Vec<usize> = Vec::with_capacity(active_steps.len());
                 let mut area_start = isize::MIN;
 
                 for event in y_events {
@@ -190,8 +190,7 @@ pub fn run(input: &str) {
 
                     let mut z_cubes = 0;
                     {
-                        let mut active_steps: HashSet<usize> =
-                            HashSet::with_capacity(active_steps.len());
+                        let mut active_steps: Vec<usize> = Vec::with_capacity(active_steps.len());
                         let mut area_start = isize::MIN;
 
                         for event in z_events {
@@ -206,11 +205,16 @@ pub fn run(input: &str) {
 
                             match event.kind {
                                 EventKind::Start => {
-                                    active_steps.insert(event.step_id);
+                                    active_steps.push(event.step_id);
                                     area_start = event.position;
                                 }
                                 EventKind::End => {
-                                    active_steps.remove(&event.step_id);
+                                    active_steps.swap_remove(
+                                        active_steps
+                                            .iter()
+                                            .position(|&step| step == event.step_id)
+                                            .unwrap(),
+                                    );
                                     area_start = event.position + 1;
                                 }
                             };
@@ -219,12 +223,17 @@ pub fn run(input: &str) {
 
                     match event.kind {
                         EventKind::Start => {
-                            active_steps.insert(event.step_id);
+                            active_steps.push(event.step_id);
                             z_cubes *= event.position - area_start;
                             area_start = event.position;
                         }
                         EventKind::End => {
-                            active_steps.remove(&event.step_id);
+                            active_steps.swap_remove(
+                                active_steps
+                                    .iter()
+                                    .position(|&step| step == event.step_id)
+                                    .unwrap(),
+                            );
                             z_cubes *= event.position - area_start + 1;
                             area_start = event.position + 1;
                         }
@@ -236,12 +245,17 @@ pub fn run(input: &str) {
 
             match event.kind {
                 EventKind::Start => {
-                    active_steps.insert(event.step_id);
+                    active_steps.push(event.step_id);
                     y_cubes *= event.position - area_start;
                     area_start = event.position;
                 }
                 EventKind::End => {
-                    active_steps.remove(&event.step_id);
+                    active_steps.swap_remove(
+                        active_steps
+                            .iter()
+                            .position(|&step| step == event.step_id)
+                            .unwrap(),
+                    );
                     y_cubes *= event.position - area_start + 1;
                     area_start = event.position + 1;
                 }
