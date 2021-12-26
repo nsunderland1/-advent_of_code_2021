@@ -60,7 +60,8 @@ fn index((x, y, z): (isize, isize, isize)) -> Option<(usize, usize, usize)> {
     }
 }
 
-#[derive(Debug, Clone)]
+// Important that Start < End, otherwise edge cases won't be handled right
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 enum EventKind {
     Start,
     End,
@@ -125,7 +126,7 @@ pub fn run(input: &str) {
                     },
                 ]
             })
-            .sorted_by_key(|event| event.position);
+            .sorted_by_key(|event| (event.position, event.kind));
 
         let y_events = steps
             .iter()
@@ -166,7 +167,7 @@ pub fn run(input: &str) {
             .collect_vec();
 
         let mut active_steps: Vec<usize> = Vec::with_capacity(steps.len());
-        let mut area_start = isize::MIN;
+        let mut area_start = 0;
         let mut total_cubes = 0usize;
 
         for event in x_events {
@@ -174,24 +175,24 @@ pub fn run(input: &str) {
                 .iter()
                 .flat_map(|&i| y_events[i].clone())
                 // TODO: be smarter and avoid re-sorting every time?
-                .sorted_by_key(|event| event.position);
+                .sorted_by_key(|event| (event.position, event.kind));
 
             let mut y_cubes = 0;
             {
                 let mut active_steps: Vec<usize> = Vec::with_capacity(active_steps.len());
-                let mut area_start = isize::MIN;
+                let mut area_start = 0;
 
                 for event in y_events {
                     let z_events = active_steps
                         .iter()
                         .flat_map(|&i| z_events[i].clone())
                         // TODO: be smarter and avoid re-sorting every time?
-                        .sorted_by_key(|event| event.position);
+                        .sorted_by_key(|event| (event.position, event.kind));
 
                     let mut z_cubes = 0;
                     {
                         let mut active_steps: Vec<usize> = Vec::with_capacity(active_steps.len());
-                        let mut area_start = isize::MIN;
+                        let mut area_start = 0;
 
                         for event in z_events {
                             if let Some(max) = active_steps.iter().copied().max() {
